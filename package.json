@@ -28,6 +28,7 @@
   },
   "homepage": "https://github.com/katie0809/2021AiHub-ODQA#readme",
   "dependencies": {
+    "@tensorflow/tfjs": "^3.9.0",
     "axios": "^0.21.4",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
