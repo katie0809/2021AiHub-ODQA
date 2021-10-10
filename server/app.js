@@ -34,6 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(logger.express);
 
 /** 라우터 */
+const chatrRouter = require("../services/chat");
 
 /** 에러처리 */
 app.use((err, req, res, next) => {
