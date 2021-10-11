@@ -1,5 +1,3 @@
-const compInfo = require("./companies");
-
 module.exports = {
   /** 요청객체 오류 */
   err_no_params: (key=null) => {

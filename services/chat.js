@@ -1,6 +1,5 @@
 const express = require("express");
 const createError = require("http-errors");
-const base64url = require("base64url");
 
 const strings = require("../config/strings");
 
