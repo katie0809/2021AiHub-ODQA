@@ -10,8 +10,10 @@ dotenv.config({
 
 /** **************************************************** */
 // 모듈 초기화
-const logger = require("../Plugin/Logger");
 const app = express();
+
+const logger = require("../Plugin/Logger");
+const chatRouter = require("../services/chat");
 
 /** CORS 허용: 아이폰에 대해서만 허용한다. */
 const corsOptions = {
@@ -34,7 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(logger.express);
 
 /** 라우터 */
-const chatrRouter = require("../services/chat");
+app.use("/chat", chatRouter);
 
 /** 에러처리 */
 app.use((err, req, res, next) => {

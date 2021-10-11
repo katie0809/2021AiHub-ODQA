@@ -15,8 +15,8 @@ router.post("/", (req, res, next) => {
       next(createError(405, strings.err_wrong_params));
       return;
     }
-    const chat = new ChatHandler(message, 
-        (answer) => {
+    const chat = new ChatHandler( 
+        (message, answer) => {
           const resBody = {
             message: message, // 기존 메시지
             answer: answer // 챗봇 답변
@@ -46,3 +46,4 @@ router.post("/tokens", (req, res, next) => {
         next(e);
     }
 })
+module.exports = router

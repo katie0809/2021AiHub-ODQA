@@ -3,10 +3,12 @@ const strings = require("../config/strings");
 const logger = require("./Logger");
 
 class Chat {
-  constructor(message, successCallbark, errCallback) {
-    if (!message || successCallbark === null || errCallback === undefined) {
+  constructor(successCallbark, errCallback) {
+    if (successCallbark === null || errCallback === undefined) {
       throw createError(405, strings.err_wrong_params);
     }
+    this.successCallbark = successCallbark
+    this.errCallback = errCallback
 
     /** 단말 -> 서버 전송필수값(키: 길이) */
     this.requiredClientParams = { message: 1024 };
@@ -23,6 +25,12 @@ class Chat {
 
       return true;
     });
+
+    // 모든 값 유효하면 최초 질의 저장한다
+    this.originalmsg = param['message']
+
+    // TODO: 성공 반환
+    this.successCallbark(this.originalmsg, '성공')
   }
 }
 

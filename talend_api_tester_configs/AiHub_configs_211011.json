@@ -1,0 +1,130 @@
+{
+  "version": 6,
+  "entities": [
+    {
+      "entity": {
+        "type": "Project",
+        "id": "3ee1ef0e-bf58-4afc-95f1-d0eb70201e40",
+        "name": "2021AiHub-ODQA"
+      },
+      "children": [
+        {
+          "entity": {
+            "type": "Scenario",
+            "id": "6dd3976e-e267-4493-9374-be7f82a08228",
+            "name": "/chat"
+          },
+          "children": [
+            {
+              "entity": {
+                "type": "Request",
+                "method": {
+                  "requestBody": true,
+                  "link": "http://tools.ietf.org/html/rfc7231#section-4.3.3",
+                  "name": "POST"
+                },
+                "body": {
+                  "formBody": {
+                    "overrideContentType": true,
+                    "encoding": "application/x-www-form-urlencoded",
+                    "items": [
+                      {
+                        "enabled": true,
+                        "type": "Text",
+                        "name": "message",
+                        "value": "오픈도메인 기계독해가 뭐야?"
+                      }
+                    ]
+                  },
+                  "bodyType": "Form"
+                },
+                "uri": {
+                  "query": {
+                    "delimiter": "&",
+                    "items": []
+                  },
+                  "scheme": {
+                    "name": "http",
+                    "version": "V11"
+                  },
+                  "host": "${\"ip\"}:${\"port\"}",
+                  "path": "/chat"
+                },
+                "id": "6818ba51-56bf-4252-93c9-7d0230c01b9e",
+                "name": "default",
+                "headers": [
+                  {
+                    "enabled": true,
+                    "name": "Content-Type",
+                    "value": "application/x-www-form-urlencoded"
+                  }
+                ]
+              }
+            },
+            {
+              "entity": {
+                "type": "Request",
+                "method": {
+                  "requestBody": true,
+                  "link": "http://tools.ietf.org/html/rfc7231#section-4.3.3",
+                  "name": "POST"
+                },
+                "body": {
+                  "formBody": {
+                    "overrideContentType": true,
+                    "encoding": "application/x-www-form-urlencoded",
+                    "items": []
+                  },
+                  "bodyType": "Text"
+                },
+                "uri": {
+                  "query": {
+                    "delimiter": "&",
+                    "items": []
+                  },
+                  "scheme": {
+                    "name": "http",
+                    "version": "V11"
+                  },
+                  "host": "${\"ip\"}:${\"port\"}",
+                  "path": "/chat/tokens"
+                },
+                "id": "cbf08a5a-fb44-4501-bda6-0050a3284cf1",
+                "name": "/tokens",
+                "headers": [
+                  {
+                    "enabled": true,
+                    "name": "Content-Type",
+                    "value": "application/json"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "environments": [
+    {
+      "id": "4a1294ff-4233-40e5-9713-db5df8a5e4dc",
+      "name": "2021AiHub-OQDA-dev",
+      "variables": {
+        "155b747b-a15d-49f9-bd1b-a66a4167d57d": {
+          "createdAt": "2021-10-11T22:46:46.446+09:00",
+          "name": "ip",
+          "value": "localhost",
+          "enabled": true,
+          "private": false
+        },
+        "4aeef7c5-dd19-4072-ac7b-277e6307035b": {
+          "createdAt": "2021-10-11T22:47:01.798+09:00",
+          "name": "port",
+          "value": "3003",
+          "enabled": true,
+          "private": false
+        }
+      }
+    }
+  ]
+}
