@@ -2,6 +2,7 @@ const createError = require('http-errors');
 const strings = require('../config/strings');
 const logger = require('./Logger');
 const elasticsearch = require('./Elasticsearch');
+const pytensor = require('./Pytensor');
 
 class Chat {
 	constructor(successCallback, errCallback) {
@@ -35,9 +36,11 @@ class Chat {
 		// Elasticsearch 조회 후 결과를 context로 회신
 		this.context = await elasticsearch.search(this.originalmsg);
 
-		// TODO: 성공 반환
+		// Question, Context 를 tensorflow 모델로 수행
+		this.answer = await pytensor.predict(this.originalmsg, this.context)
+		
 		// this.successCallback(this.originalmsg, '성공');
-		this.successCallback(this.originalmsg, this.context);
+		this.successCallback(this.originalmsg, this.answer);
 	}
 }
 

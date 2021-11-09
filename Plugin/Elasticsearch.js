@@ -5,17 +5,14 @@ const { Client } = require('@elastic/elasticsearch');
 const client = new Client({ node: 'http://localhost:9200' });
 
 async function search(question) {
-	// 질문 예시 : '사회투자의 관점에서는 잊고 있는 다른 더 큰 특징은 무엇인가?'
-	logger.debug('question', question);
+	logger.debug('elasticsearch question', question);
 
 	const { body } = await client.search({
-		index: 'qa-index',
-		// from: 20,
-		// size: 10,
+		index: 'qa-index-nori-anly',
 		body: {
 			query: {
 				match: {
-					context: question,
+					'context.nori': question,
 				},
 			},
 		},
@@ -25,10 +22,10 @@ async function search(question) {
 		return '조회결과가 없습니다.';
 	} else {
 		logger.debug(
-			'Elasticsearch Search Result',
-			body.hits.hits[0]._source.context
-		);
-		return body.hits.hits[0]._source.title;
+				'Elasticsearch Search Result Title : ',
+				body.hits.hits[0]._source.title
+			);
+		return body.hits.hits[0]._source.context;
 	}
 }
 
