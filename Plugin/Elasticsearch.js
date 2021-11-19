@@ -9,6 +9,7 @@ async function search(question) {
 
 	const { body } = await client.search({
 		index: 'qa-index-nori-anly',
+		size: 2,
 		body: {
 			query: {
 				match: {
@@ -21,11 +22,39 @@ async function search(question) {
 	if (!body || !body.hits || !body.hits.hits || body.hits.hits.length == 0) {
 		return '조회결과가 없습니다.';
 	} else {
+		// 1개 결과만 반환할 때
+		// logger.debug(
+		// 		'Elasticsearch Search Result Title : ',
+		// 		body.hits.hits[0]._source.title
+		// 	);
+		// return body.hits.hits[0]._source.context;
+		
+		// TODO 여러개 결과를 반환할 때
 		logger.debug(
-				'Elasticsearch Search Result Title : ',
-				body.hits.hits[0]._source.title
-			);
-		return body.hits.hits[0]._source.context;
+			'Elasticsearch Search Result Title : ',
+			body.hits.hits[0]._source.title
+		);
+		var context_list = [];
+		for (var idx in body.hits.hits) {
+			let doc = body.hits.hits[idx]._source
+			context_list.push({
+				"doc_id": doc.doc_id,
+				"title": doc.title,
+				"authors" : doc.authors,
+				"journal" : {
+					"ko" : doc.journal.ko,
+					"en" : doc.journal.en
+				},
+				"year" : doc.year,
+				"context": doc.context,
+				"question":question
+			});
+		}
+		logger.debug(
+			'Elasticsearch Search Result : ',
+			context_list
+		);
+		return context_list;
 	}
 }
 
