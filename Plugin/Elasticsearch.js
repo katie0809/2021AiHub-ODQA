@@ -7,13 +7,27 @@ const client = new Client({ node: 'http://localhost:9200' });
 async function search(question) {
 	logger.debug('elasticsearch question', question);
 
+	// const { body } = await client.search({
+	// 	index: 'qa-index-nori-anly',
+	// 	size: 3,
+	// 	body: {
+	// 		query: {
+	// 			match: {
+	// 				'context.nori': question,
+	// 			},
+	// 		},
+	// 	},
+	// });
+
 	const { body } = await client.search({
-		index: 'qa-index-nori-anly',
-		size: 2,
+		index: 'qa-index',
+		size: 3,
 		body: {
 			query: {
-				match: {
-					'context.nori': question,
+				multi_match: {
+					"query": question, 
+                	"fields": [ "context" ] 
+                	// "fields": [ "context.nori", "qas.keyword.keyword_text", "qas.answer.answer_text" ] 
 				},
 			},
 		},
@@ -30,13 +44,14 @@ async function search(question) {
 		// return body.hits.hits[0]._source.context;
 		
 		// TODO 여러개 결과를 반환할 때
-		logger.debug(
-			'Elasticsearch Search Result Title : ',
-			body.hits.hits[0]._source.title
-		);
 		var context_list = [];
 		for (var idx in body.hits.hits) {
 			let doc = body.hits.hits[idx]._source
+			logger.debug(
+				'Elasticsearch Search Result Title : ',
+				doc.title
+			);
+
 			context_list.push({
 				"doc_id": doc.doc_id,
 				"title": doc.title,

@@ -4,6 +4,7 @@ import transformers
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AutoConfig
 from transformers import BigBirdTokenizer, BigBirdForQuestionAnswering
 import torch
+import numpy as np
 
 import gc
 
@@ -25,7 +26,7 @@ class QAPrediction():
 
     def predict(self, contexts, questions):
         result = []
-        
+        print("HELLO PREDICTION")
         with torch.no_grad():
             for context, question in tqdm(zip(contexts, questions)):
                 answers = []
@@ -66,13 +67,14 @@ class QAPrediction():
                     pred = pred.replace("#","")
                     if pred != '[CLS]':
                         answers.append({
-                            'answer_start': token_start_index.cpu().numpy()[0], 
-                            'answer_end': token_end_index.cpu().numpy()[0], 
-                            'answer': pred
+                            'answer_start': int(token_start_index.cpu().numpy()[0]), 
+                            'answer_end': int(token_end_index.cpu().numpy()[0]), 
+                            'answer': pred,
+                            'answer_score': [start_logits, end_logits]
                         })
 
                 result.append({
-                    'context': context,
+                    'context': 'context',
                     'question': question,
                     'answer': answers
                 })
@@ -158,16 +160,12 @@ def get_predict():
         print("question", question)
         context = request.json["context"]
         print("context", context)
-        answer = predictor.predict(context,question)
+        result = predictor.predict(context,question)
         # answer = predictor.predict([context],[question])
         print("answer :", type(answer), answer)
         print(type(answer[0]))
         # result = json.dumps(answer[0]["answer"][0]["answer"],ensure_ascii=False)
-        answer_list = []
-        for asw in answer:
-            if asw["answer"]:
-                answer_list.append(asw["answer"][0]["answer"])
         
-        result = json.dumps(answer_list,ensure_ascii=False)
+        jsonres = json.dumps(result,ensure_ascii=False)
 
-    return result, status.HTTP_200_OK, {"Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*"}
+    return jsonres, status.HTTP_200_OK, {"Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*"}

@@ -18,19 +18,14 @@ router.post('/', (req, res, next) => {
 		}
 
 		const chat = new ChatHandler(
-			(utterance, answer) => {
-				// const resBody = {
-				// 	utterance: utterance, // 기존 메시지
-				// 	answer: answer, // 챗봇 답변
-				// };
-
+			(request, predicted) => {
 				const resBody = {
 					version: '2.0',
 					template: {
 						outputs: [
 							{
 								simpleText: {
-									text: answer,
+									"text": predicted
 								},
 							},
 						],

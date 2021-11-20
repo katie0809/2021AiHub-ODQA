@@ -44,19 +44,20 @@ app.use((err, req, res, next) => {
   const errCode = err.code || "000";
   const errMessage = err.msg || err.message || err.stack;
 
-  logger.error(err, req);
+  console.log('error occured')
+  res.status(200).json({
+    version: '2.0',
+    template: {
+      outputs: [
+        {
+          simpleText: {
+            "text": "죄송합니다, 답을 찾지 못했어요"
+          },
+        },
+      ],
+    },
+  });
 
-  if (!errStatus) {
-    res.status(500).json({
-      errCode,
-      errMessage,
-    });
-  } else {
-    res.status(errStatus).json({
-      errCode,
-      errMessage,
-    });
-  }
 });
 
 const server = app.listen(process.env.PORT, function () {

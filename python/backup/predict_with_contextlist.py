@@ -4,6 +4,9 @@ import transformers
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AutoConfig
 from transformers import BigBirdTokenizer, BigBirdForQuestionAnswering
 import torch
+import numpy
+
+import gc
 
 class QAPrediction():
     def __init__(self, config):
@@ -16,6 +19,10 @@ class QAPrediction():
             self.config['model_name_or_path'], 
             use_fast=False
         )
+        # torch cude 확인
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") 
+        print("The model will be running on", self.device, "device\n") 
+        self.model.to(self.device)  
 
     def predict(self, contexts, questions):
         result = []
@@ -34,16 +41,36 @@ class QAPrediction():
                     encodings = self.tokenizer(question, 
                                         context[stpos:endpos], 
                                         return_tensors="pt")
-                    outputs = self.model(**encodings)
-                    start_logits, end_logits = outputs[0], outputs[1]
+                    
+                    # input 을 cuda로 저장
+                    print("type ",type(encodings))
+                    print(encodings)
+
+                    # input_ids = encodings["input_ids"].to(self.device).cpu()
+                    # token_type_ids = encodings["token_type_ids"].to(self.device).cpu()
+                    # attention_mask = encodings["attention_mask"].to(self.device).cpu()
+                    input_ids = encodings["input_ids"].cuda()
+                    token_type_ids = encodings["token_type_ids"].cuda()
+                    attention_mask = encodings["attention_mask"].cuda()
+                    # input_ids = encodings["input_ids"]
+                    # token_type_ids = encodings["token_type_ids"]
+                    # attention_mask = encodings["attention_mask"]
+                    
+                    outputs = self.model(input_ids=input_ids,token_type_ids=token_type_ids,attention_mask=attention_mask)
+
+                    # outputs = self.model(**encodings)
+                  
+
+                    start_logits, end_logits = outputs[0].to(self.device), outputs[1].to(self.device)
                     token_start_index, token_end_index = start_logits.argmax(dim=-1), end_logits.argmax(dim=-1)
                     pred = self.tokenizer.convert_tokens_to_string(self.tokenizer.convert_ids_to_tokens(encodings["input_ids"][0][token_start_index: token_end_index + 1]))
                     pred = pred.replace("#","")
                     if pred != '[CLS]':
                         answers.append({
-                            'answer_start': token_start_index.numpy()[0], 
-                            'answer_end': token_end_index.numpy()[0], 
-                            'answer': pred
+                            'answer_start': token_start_index.cpu().numpy()[0], 
+                            'answer_end': token_end_index.cpu().numpy()[0], 
+                            'answer': pred,
+                            'answer_score': [np.max(start_logits), np.max(end_logits)]
                         })
 
                 result.append({
@@ -133,9 +160,12 @@ def get_predict():
         print("question", question)
         context = request.json["context"]
         print("context", context)
-        answer = predictor.predict([context],[question])
+        result = predictor.predict(context,question)
+        # answer = predictor.predict([context],[question])
         print("answer :", type(answer), answer)
         print(type(answer[0]))
-        result = json.dumps(answer[0]["answer"][0]["answer"],ensure_ascii=False)
+        # result = json.dumps(answer[0]["answer"][0]["answer"],ensure_ascii=False)
+        
+        jsonres = json.dumps(result,ensure_ascii=False)
 
-    return result, status.HTTP_200_OK, {"Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*"}
+    return jsonres, status.HTTP_200_OK, {"Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*"}

@@ -102,3 +102,9 @@ dist
 
 # TernJS port file
 .tern-port
+python/.venv/
+models/
+python/__pycache__/
+nohup.out
+.ipynb_checkpoints/
+python/__pycache__/app.cpython-38.pyc
