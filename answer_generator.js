@@ -1,21 +1,10 @@
-const express = require('express');
-const createError = require('http-errors');
-
-const strings = require('../config/strings');
-
-const logger = require('../Plugin/Logger');
-const ChatHandler = require('../Plugin/Chat');
-
-const router = express.Router();
 const puppeteer = require('puppeteer');
+// const fs = require('fs');
+// var contentHtml = fs.readFileSync('./sample.html', 'utf8');
 
-/** 카드 html */
-const card_html=`
+document=`
 <html>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-	<meta http-equiv="Pragma" content="no-cache" />
-	<meta http-equiv="Expires" content="0" />
 	<head>
 		<title>Insert title here</title>
 		<style>
@@ -44,6 +33,9 @@ const card_html=`
 		body.width-fluid,
 		body.width-fluid .container {
 			width: 100% !important;
+		}
+		mark {
+			background-color: yellow;
 		}
 
 		*,
@@ -267,144 +259,20 @@ const card_html=`
 		</style>
 	</head>
 	<body>
-		<div class="card"><div class="card-header">
+`
+`
+		<div class="card"><div class="card-header"><h4 class="card-title">성종</h4><span class="badge" title="연관어">창경궁</span></div><div class="card-body"><p>세조의 큰아들인 덕종의 둘째아들로, 1469년 예종이 죽자 병약한 형 월산군을 대신하여 13살의 나이로 왕위에 올랐다. 1470년에는 국가가 농민으로부터 직접 조세를 거두어들인 다음 관리들에게 녹봉을 현물로 지급하는 관수관급제를 실시하였다. 성종은 선왕들의 통치 제도 정비 작업을 법제적으로 마무리하는 한편, 숭유억불의 정책을 더욱 굳건히 펴 나갔다. 1478년에는 홍문관에 집현전적인 기능을 편입시켜 학문 연구 기관으로 개편했다. 또한 즉위 이후 &lt;경국대전&gt;의 편찬 사업을 이어받아 1485년 이를 최종적으로 완성·반포했다. 1457(세조 3)~1494(성종 25). &lt;경국대전&gt;의 반포와 관수관급제 실시, 유학의 장려 등을 통해 조선봉건국가체제를 완성한 조선의 제9대 왕.</p></div></div>
+	</body>
+</html>
 `
 
-/** 질의 답변 요청 */
-router.post('/', (req, res, next) => {
-	try {
-		// 요청객체 유효성 체크
-		if (!req || !res || !req.body) {
-			next(createError(405, strings.err_wrong_params));
-			return;
-		}
-
-		// 1. 가장 스코어 높은 답변 한개만 반환한다.
-		// const chat = new ChatHandler(
-		// 	(request, answer, context) => {
-		// 		const resBody = {
-		// 			version: '2.0',
-		// 			template: {
-		// 				outputs: [
-		// 					{
-		// 						simpleText: {
-		// 							"text": answer['answer']
-		// 						},
-		// 					},
-		// 				],
-		// 			},
-		// 		};
-
-		// 		res.status(200).json(resBody);
-		// 		logger.debug('RESPONSE', resBody, req.originalUrl);
-		// 	},
-		// 	(error) => {
-		// 		next(createError(520, strings.err_chat_fail));
-		// 	}
-		// );
-
-		// 2. 스코어 높은 답변 이미지를 반환한다
-		// const chat = new ChatHandler(
-		// 	async (request, answer, context) => {
-		// 		console.log(Object.keys(context))
-		// 		let answer_st = context['context'].indexOf(answer['answer'])
-		// 		if(answer_st < 0) answer_st = 0
-		// 		let answer_end = answer_st+answer['answer'].length
-		// 		let contentHtml = `${card_html}				
-		// 			<h4 class="card-title">${context['title']}</h4></div>
-		// 			<div class="card-body"><p>${context['context'].substr(answer_st-100, 100)}<mark>${answer['answer']}</mark>${context['context'].substr(answer_end, 200)}</p></div></div></body></html>`
-		// 		const browser = await puppeteer.launch({args: ['--start-fullscreen', '--no-sandbox', '--disable-setuid-sandbox']}); // --start-fullscreen 옵션 추가
-		// 		const page = await browser.newPage();
-		// 		await page.setViewport({width: 340, height: 380}); // 변경
-		// 		await page.setContent(contentHtml);
-		// 		await page.screenshot({path: 'img.png', omitBackground: true});
-		// 		await browser.close();
-
-		// 		const resBody = {
-		// 			version: '2.0',
-		// 			template: {
-		// 				outputs: [
-		// 					{
-		// 						"simpleImage": {
-		// 							"imageUrl": "http://34.217.138.255:8080/chat/image",
-		// 							"altText": "보물상자입니다"
-		// 						}
-		// 					},
-		// 				],
-		// 			},
-		// 		};
-
-		// 		res.status(200).json(resBody);
-		// 		logger.debug('RESPONSE', resBody, req.originalUrl);
-		// 	},
-		// 	(error) => {
-		// 		next(createError(520, strings.err_chat_fail));
-		// 	}
-		// );
-
-		// 3. 논문 링크 반환 
-		const chat = new ChatHandler(
-			(request, answer, context) => {
-				const url = 'https://scienceon.kisti.re.kr/srch/selectPORSrchArticle.do?cn='
-				const resBody = {
-					"version": "2.0",
-					"template": {
-					  "outputs": [
-						{
-						  "listCard": {
-							"header": {
-							  "title": request
-							},
-							"items": [
-							  {
-								"title": context['title'],
-								"description": context['authors'],
-								"link": {
-								  "web": `${url}${context['doc_id']}`
-								}
-							  },
-							],
-							"buttons": [
-							  {
-								"label": "구경가기",
-								"action": "webLink",
-								"webLinkUrl": "https://namu.wiki/w/%EC%B9%B4%EC%B9%B4%EC%98%A4%ED%94%84%EB%A0%8C%EC%A6%88"
-							  }
-							]
-						  }
-						}
-					  ]
-					}
-				  }
-
-				res.status(200).json(resBody);
-				logger.debug('RESPONSE', resBody, req.originalUrl);
-			},
-			(error) => {
-				next(createError(520, strings.err_chat_fail));
-			}
-		);
-
-		logger.debug('REQUEST', req.body, req.originalUrl);
-		chat.checkParamValid(req.body);
-	} catch (e) {
-		next(e);
-	}
-});
-
-/** 질의 토큰화 결과 요청 */
-router.get('/image', (req, res, next) => {
-	let predicted = "정답입니다"
-	try {
-		// res.send(`${card_html}
-		// <div class="card"><div class="card-header">
-		// 	<h4 class="card-title">성종</h4></div>
-		// 	<div class="card-body"><p>${predicted}</p></div></div></body></html>`
-		// );
-		res.download('img.png')
-	} catch (e) {
-		console.log(e)
-		next(e);
-	}
-});
-module.exports = router;
+async function generate_image() {
+    const browser = await puppeteer.launch({args: ['--start-fullscreen', '--no-sandbox', '--disable-setuid-sandbox']}); // --start-fullscreen 옵션 추가
+    const page = await browser.newPage();
+    await page.setViewport({width: 340, height: 380}); // 변경
+    await page.setContent(contentHtml);
+    await page.screenshot({path: 'naver.png', omitBackground: true});
+    await browser.close();
+}
+  
+rr();

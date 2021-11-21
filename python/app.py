@@ -4,16 +4,21 @@ from flask_api import status
 import json
 
 from predictor import QAPrediction
+from classifier import QAClassification
 
 app = Flask(__name__)
 
-configs = {
+pred_configs = {
     'model_name_or_path': '/home/ubuntu/2021AiHub-ODQA/models/korquad_2/0-0-ckpt',
     'max_seq_len': 4096,
     'doc_stride': 512
 }
-print('hello')
-predictor = QAPrediction(configs)
+intent_configs = {
+    'model_name_or_path': '/home/ubuntu/2021AiHub-ODQA/models/korquad_2/0-0-ckpt',
+    'max_seq_len': 4096,
+    'doc_stride': 512
+}
+predictor = QAPrediction(pred_configs)
 
 @app.route('/')
 def greeting():
@@ -35,6 +40,18 @@ def get_predict():
 
         except Exception as e:
             raise Exception('Fail to predict', e)
-        # print("result", result['answer'])
-        # answer = predictor.predict([context],[question])
-        # result = json.dumps(answer[0]["answer"][0]["answer"],ensure_ascii=False)
+
+@app.route('/intent', methods=['POST'])
+def get_intent():
+    classifier = QAPrediction(intent_configs)
+    if request.method == 'POST':
+        print("request", request)
+        question = request.json["question"]
+        try:
+            result = classifier.get_intent(question)
+            jsonres = json.dumps(result, ensure_ascii=False)
+
+            return jsonres, status.HTTP_200_OK, {"Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*"}
+
+        except Exception as e:
+            raise Exception('Fail to predict', e)

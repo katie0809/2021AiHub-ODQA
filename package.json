@@ -39,6 +39,7 @@
     "log4js": "^6.3.0",
     "nodemon": "^2.0.13",
     "package-lock.json": "^1.0.0",
-    "prettier": "^2.4.1"
+    "prettier": "^2.4.1",
+    "puppeteer": "^11.0.0"
   }
 }

@@ -14,23 +14,44 @@ class Chat {
 
 		/** 단말 -> 서버 전송필수값(키: 길이) */
 		this.requiredClientParams = { userRequest: 512 };
+
+		/** 모델 설정값 */
+		this.modelConfig = {
+			'max_seq_len': 4096,
+			'doc_stride': 64
+		}
 	}
 
 	/**
-	 * @param {Object} predicted 
+	 * 주어진 컨텍스트를 max_seq_len만큼씩 자른다. doc_stride만큼 겹치도록 한다.
+	 * @param {String} context 
+	 */
+	splitContext(context) {
+
+	}
+
+	/**
+	 * @param {Array} predicted 
 	 */
 	getTopAnswer(predicted) {
 		let score = 0;
-		let topanswer = '';
-		predicted.forEach((answers) => {
-			answers['answer'].forEach((pred) => {
-				console.log(pred)
+		let topi = 0;
+		let topj = 0;
+		let topanswer;
+		predicted.forEach((answers, i) => {
+			answers['answer'].forEach((pred, j) => {
+				// console.log(pred, i, j)
 				let curscore = (pred['answer_score'][0] + pred['answer_score'][1]) / 2;
-				if(curscore > score) topanswer = pred['answer'];
+				if(curscore > score) {
+					score = curscore
+					topanswer = pred;
+					topi = i;
+					topj = j;
+				}
 			});
 		})
-
-		return topanswer;
+		// console.log("RETURN TOP ANSWER", topanswer, topi, topj)
+		return [topanswer, topi, topj];
 	}
 
 	/**
@@ -50,14 +71,9 @@ class Chat {
 		// 모든 값 유효하면 최초 질의 저장한다
 		this.originalmsg = param['userRequest'].utterance;
 
-		// Elasticsearch 조회 후 결과를 context로 회신
-		// this.context = await elasticsearch.search(this.originalmsg);
-
 		try {
+			// 질의와 관련있는 논문 검색
 			this.context_list = await elasticsearch.search(this.originalmsg);
-
-			// logger.debug(this.context_list, typeof(this.context_list))
-
 			this.contexts = [];
 			this.questions = [];
 			
@@ -67,10 +83,9 @@ class Chat {
 			else{
 				this.context_list.forEach(ctx => {
 				
+					// 논문 텍스트 전처리 - 특수문자 제거
 					let context = ctx["context"]
-					// 줄바꿈제거
 					context = context.replace(/\s+/g, ' ').trim();
-					// 특수문자 제거
 					var reg = /[\{\}\[\]\/?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"]/gi
 					context = context.replace(reg, "");  
 		
@@ -78,64 +93,28 @@ class Chat {
 					let context_size = context.length
 					let split_size = 3072
 					let split_cnt = Math.ceil(context_size / split_size)
-					// logger.debug("context_size ",context_size)
-					// logger.debug("split_cnt ",split_cnt)
-		
-					// for (var step = 0; step < split_cnt; step++) {
-					// 	let start = step * split_size
-					// 	let end = (step + 1) * split_size
-					// 	start = (start - stride >= 0 ? start - stride : start)
-					// 	end = (end + stride <= context_size  ? end + stride : context_size)
-					// 	this.contexts.push(context.substring(start,end));
-					// 	this.questions.push(ctx["question"]);
-						
-					// 	logger.debug("question ", ctx["question"])
-					// }
 					this.contexts.push(context.substring(500, 4500));
 					this.questions.push(ctx["question"]);
 
 				});
-
+				
+				// 논문에서 예상 정답 추출
 				this.answer = await pytensor.predict(this.contexts, this.questions)
-				this.successCallback(this.originalmsg, this.getTopAnswer(this.answer));
+
+				// 1.스코어가 가장 높은 정답텍스트 하나만 반환한다.
+				// this.successCallback(this.originalmsg, this.getTopAnswer(this.answer));
+
+				// 2.스코어가 가장 높은 정답이미지 URL 하나만 반환한다.
+				let [topanswer, i, j] = this.getTopAnswer(this.answer);
+				// console.log(topanswer['answer'], i, j, this.contexts[i])
+				this.successCallback(this.originalmsg, topanswer, this.context_list[i]);
+
 
 			}
 		}
 		catch(e) {
 			this.errCallback(e);
 		}
-
-		// Context 를 여러개로 쪼개서 질문수행
-		// logger.debug(typeof(this.context))
-		// let stride = 500
-		// let context_size = this.context.length
-		// let split_size = 2046
-		// let split_cnt = parseInt(context_size / split_size)
-		// logger.debug("context_size ",context_size)
-		// logger.debug("split_cnt ",split_cnt)
-
-		// for (var step = 0; step < split_cnt; step++) {
-		// 	let start = step * split_size
-		// 	let end = (step + 1) * split_size
-		// 	start = (start - stride >= 0 ? start - stride : start)
-		// 	end = (end + stride <= context_size  ? end + stride : context_size)
-			
-		// 	this.answer = await pytensor.predict(this.originalmsg, this.context.substring(start,end))
-		// 	if (this.answer != "") {
-		// 		break;
-		// 	}
-		// }
-
-		// this.answer = await pytensor.predict(this.contexts, this.questions)
-		
-		// logger.debug("answer ", this.answer)
-		//TODO 전달온 Answer 중 최고 높은 점수만 회신하기
-		
-		// Question, Context 를 tensorflow 모델로 수행
-		// this.answer = await pytensor.predict(this.originalmsg, this.context_list)
-		
-		// this.successCallback(this.originalmsg, this.answer);
-		// this.successCallback(this.originalmsg, this.answer.toString());
 	}
 }
 

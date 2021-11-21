@@ -32,6 +32,9 @@ app.set("port", process.env.PORT);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+/** html */
+app.use(express.static(path.join(__dirname, 'html')));
+
 /** API 로그생성 */
 app.use(logger.express);
 
@@ -44,7 +47,7 @@ app.use((err, req, res, next) => {
   const errCode = err.code || "000";
   const errMessage = err.msg || err.message || err.stack;
 
-  console.log('error occured')
+  console.log(err)
   res.status(200).json({
     version: '2.0',
     template: {
