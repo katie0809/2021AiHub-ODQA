@@ -4,7 +4,6 @@ from flask_api import status
 import json
 
 from predictor import QAPrediction
-from classifier import QAClassification
 
 app = Flask(__name__)
 
@@ -14,7 +13,7 @@ pred_configs = {
     'doc_stride': 512
 }
 intent_configs = {
-    'model_name_or_path': '/home/ubuntu/2021AiHub-ODQA/models/korquad_2/0-0-ckpt',
+    'model_name_or_path': '/home/ubuntu/2021AiHub-ODQA/models/korquad_2_bak/0-0-ckpt',
     'max_seq_len': 4096,
     'doc_stride': 512
 }
@@ -34,21 +33,6 @@ def get_predict():
         # print("context", context)
         try:
             result = predictor.predict(context, question)
-            jsonres = json.dumps(result, ensure_ascii=False)
-
-            return jsonres, status.HTTP_200_OK, {"Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*"}
-
-        except Exception as e:
-            raise Exception('Fail to predict', e)
-
-@app.route('/intent', methods=['POST'])
-def get_intent():
-    classifier = QAPrediction(intent_configs)
-    if request.method == 'POST':
-        print("request", request)
-        question = request.json["question"]
-        try:
-            result = classifier.get_intent(question)
             jsonres = json.dumps(result, ensure_ascii=False)
 
             return jsonres, status.HTTP_200_OK, {"Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*"}

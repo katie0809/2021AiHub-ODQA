@@ -107,4 +107,8 @@ models/
 python/__pycache__/
 nohup.out
 .ipynb_checkpoints/
+python/.venv
+python/.venv_v2
+python/sentence_transformers
+python/sentence-transformers
 python/__pycache__/app.cpython-38.pyc

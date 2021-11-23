@@ -6,13 +6,14 @@ const client = new Client({ node: 'http://localhost:9200' });
 
 async function search(question) {
 	const { body } = await client.search({
-		index: 'qa-index',
+		index: 'qa-index-nori-anly',
 		size: 3,
 		body: {
 			query: {
 				multi_match: {
 					"query": question, 
-                	"fields": [ "context", "qas.keyword.keyword_text", "qas.answer.answer_text" ] 
+                	// "fields": [ "context" ] 
+                	"fields": [ "qas.question", "qas.answer.answer_text", "context" ] 
 				},
 			},
 		},

@@ -22,12 +22,15 @@ class Chat {
 		}
 	}
 
-	/**
-	 * 주어진 컨텍스트를 max_seq_len만큼씩 자른다. doc_stride만큼 겹치도록 한다.
-	 * @param {String} context 
-	 */
-	splitContext(context) {
+	async getCasualTalkResponse(context) {
 
+		try {
+			this.answer = await pytensor.casualtalk(this.questions)
+			this.successCallback(this.answer);
+		}
+		catch(e) {
+			this.errCallback(e);
+		}
 	}
 
 	/**
@@ -104,11 +107,13 @@ class Chat {
 				// 1.스코어가 가장 높은 정답텍스트 하나만 반환한다.
 				// this.successCallback(this.originalmsg, this.getTopAnswer(this.answer));
 
-				// 2.스코어가 가장 높은 정답이미지 URL 하나만 반환한다.
-				let [topanswer, i, j] = this.getTopAnswer(this.answer);
-				// console.log(topanswer['answer'], i, j, this.contexts[i])
-				this.successCallback(this.originalmsg, topanswer, this.context_list[i]);
+				// 2.스코어가 가장 높은 정답블록과 문서블록 반환한다.
+				// let [topanswer, i, j] = this.getTopAnswer(this.answer);
+				// this.successCallback(this.originalmsg, topanswer, this.context_list[i]);
 
+				// 3.스코어가 가장 높은 정답블록과 전체 문서블록 반환한다.
+				let [topanswer, i, j] = this.getTopAnswer(this.answer);
+				this.successCallback(this.originalmsg, topanswer, this.context_list, this.answer);
 
 			}
 		}

@@ -27,6 +27,26 @@ async function predict(context, question) {
 		throw createError(520, strings.err_chat_fail);
 	}
 }
+
+async function casualtalk(question) {
+
+	let payload = JSON.stringify({
+				question: question,
+			});
+	
+	try {
+		let res = await axios.post('http://127.0.0.1:5000/casualtalk', payload, 
+		{ headers: {"Content-Type": "application/json; charset=utf-8"}});
+		
+		let result = res.data;
+		return result
+	}
+	catch(e) {
+		console.log(e)
+		throw createError(520, strings.err_chat_fail);
+	}
+}
+
 async function classify(question) {
 
 	// 2. 1개 서버에 전체 전달 후 답변 받는 경우
@@ -48,3 +68,4 @@ async function classify(question) {
 }
 
 module.exports.predict = predict;
+module.exports.casualtalk = casualtalk;

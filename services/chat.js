@@ -271,6 +271,7 @@ const card_html=`
 `
 
 /** 질의 답변 요청 */
+// 1. 답변과 논문 정보를 반환한다.
 router.post('/', (req, res, next) => {
 	try {
 		// 요청객체 유효성 체크
@@ -279,103 +280,59 @@ router.post('/', (req, res, next) => {
 			return;
 		}
 
-		// 1. 가장 스코어 높은 답변 한개만 반환한다.
-		// const chat = new ChatHandler(
-		// 	(request, answer, context) => {
-		// 		const resBody = {
-		// 			version: '2.0',
-		// 			template: {
-		// 				outputs: [
-		// 					{
-		// 						simpleText: {
-		// 							"text": answer['answer']
-		// 						},
-		// 					},
-		// 				],
-		// 			},
-		// 		};
-
-		// 		res.status(200).json(resBody);
-		// 		logger.debug('RESPONSE', resBody, req.originalUrl);
-		// 	},
-		// 	(error) => {
-		// 		next(createError(520, strings.err_chat_fail));
-		// 	}
-		// );
-
-		// 2. 스코어 높은 답변 이미지를 반환한다
-		// const chat = new ChatHandler(
-		// 	async (request, answer, context) => {
-		// 		console.log(Object.keys(context))
-		// 		let answer_st = context['context'].indexOf(answer['answer'])
-		// 		if(answer_st < 0) answer_st = 0
-		// 		let answer_end = answer_st+answer['answer'].length
-		// 		let contentHtml = `${card_html}				
-		// 			<h4 class="card-title">${context['title']}</h4></div>
-		// 			<div class="card-body"><p>${context['context'].substr(answer_st-100, 100)}<mark>${answer['answer']}</mark>${context['context'].substr(answer_end, 200)}</p></div></div></body></html>`
-		// 		const browser = await puppeteer.launch({args: ['--start-fullscreen', '--no-sandbox', '--disable-setuid-sandbox']}); // --start-fullscreen 옵션 추가
-		// 		const page = await browser.newPage();
-		// 		await page.setViewport({width: 340, height: 380}); // 변경
-		// 		await page.setContent(contentHtml);
-		// 		await page.screenshot({path: 'img.png', omitBackground: true});
-		// 		await browser.close();
-
-		// 		const resBody = {
-		// 			version: '2.0',
-		// 			template: {
-		// 				outputs: [
-		// 					{
-		// 						"simpleImage": {
-		// 							"imageUrl": "http://34.217.138.255:8080/chat/image",
-		// 							"altText": "보물상자입니다"
-		// 						}
-		// 					},
-		// 				],
-		// 			},
-		// 		};
-
-		// 		res.status(200).json(resBody);
-		// 		logger.debug('RESPONSE', resBody, req.originalUrl);
-		// 	},
-		// 	(error) => {
-		// 		next(createError(520, strings.err_chat_fail));
-		// 	}
-		// );
-
-		// 3. 논문 링크 반환 
 		const chat = new ChatHandler(
-			(request, answer, context) => {
+			(request, topanswer, contexts, answers) => {
+				console.log(contexts[0])
 				const url = 'https://scienceon.kisti.re.kr/srch/selectPORSrchArticle.do?cn='
+				let carditems = []
+				contexts.forEach((context)=> {
+					cardinfo = {
+						"title": context['title'],
+						"description": `${context['authors']}(${context['year']})`,
+						"link": {
+							"web": `${url}${context['doc_id']}`
+						}
+					}
+					carditems.push(cardinfo)
+				});
 				const resBody = {
 					"version": "2.0",
 					"template": {
 					  "outputs": [
 						{
+							simpleText: {
+								"text": "제가 생각하기에 질문의 답변은..\n\n"+topanswer['answer']
+								// "text": "제가 생각하기에 질문의 답변은..\n\n"+answers[0]['answer'][0]['answer']
+							},
+						},
+						{
 						  "listCard": {
 							"header": {
-							  "title": request
+							  "title": "관련 논문 리스트"
 							},
-							"items": [
-							  {
-								"title": context['title'],
-								"description": context['authors'],
-								"link": {
-								  "web": `${url}${context['doc_id']}`
-								}
-							  },
-							],
-							"buttons": [
-							  {
-								"label": "구경가기",
-								"action": "webLink",
-								"webLinkUrl": "https://namu.wiki/w/%EC%B9%B4%EC%B9%B4%EC%98%A4%ED%94%84%EB%A0%8C%EC%A6%88"
-							  }
-							]
+							"items": carditems,
 						  }
-						}
-					  ]
+						}],
+						"quickReplies": [
+							{
+								"messageText": "도움돼요",
+								"action": "message",
+								"label": "도움돼요"
+							},
+							{
+								"messageText": "별로에요",
+								"action": "message",
+								"label": "별로에요",
+								"data": {
+									"extra": {
+										"answer": topanswer['answer']
+									}
+								}
+							}
+						]
 					}
 				  }
+
 
 				res.status(200).json(resBody);
 				logger.debug('RESPONSE', resBody, req.originalUrl);
@@ -392,9 +349,116 @@ router.post('/', (req, res, next) => {
 	}
 });
 
-/** 질의 토큰화 결과 요청 */
-router.get('/image', (req, res, next) => {
-	let predicted = "정답입니다"
+// 2. 스코어 높은 답변 이미지를 반환한다
+router.post('/answers', (req, res, next) => {
+	try {
+		// 요청객체 유효성 체크
+		if (!req || !res || !req.body) {
+			next(createError(405, strings.err_wrong_params));
+			return;
+		}
+
+		// 2. 스코어 높은 답변 이미지를 반환한다
+		const chat = new ChatHandler(
+			async (request, topanswer, contexts, answers) => {
+			// async (request, answer, context) => {
+				console.log(Object.keys(contexts))
+				let answer_st = contexts['context'].indexOf(topanswer['answer'])
+				if(answer_st < 0) answer_st = 0
+				let answer_end = answer_st+topanswer['answer'].length
+				let contentHtml = `${card_html}				
+					<h4 class="card-title">${contexts['title']}</h4></div>
+					<div class="card-body"><p>${contexts['context'].substr(answer_st-100, 100)}<mark>${topanswer['answer']}</mark>${contexts['context'].substr(answer_end, 200)}</p></div></div></body></html>`
+				const browser = await puppeteer.launch({args: ['--start-fullscreen', '--no-sandbox', '--disable-setuid-sandbox']}); // --start-fullscreen 옵션 추가
+				const page = await browser.newPage();
+				await page.setViewport({width: 340, height: 380}); // 변경
+				await page.setContent(contentHtml);
+				await page.screenshot({path: 'img.png', omitBackground: true});
+				await browser.close();
+
+				const resBody = {
+					version: '2.0',
+					template: {
+						outputs: [
+							{
+								"simpleImage": {
+									"imageUrl": "http://34.217.138.255:8080/chat/imagedown",
+									"altText": "보물상자입니다"
+								}
+							},
+						],
+					},
+				};
+
+				res.status(200).json(resBody);
+				logger.debug('RESPONSE', resBody, req.originalUrl);
+			},
+			(error) => {
+				next(createError(520, strings.err_chat_fail));
+			}
+		);
+	} catch (e) {
+		next(e);
+	}
+
+});
+
+// 3. 스코어 높은 답변 이미지를 반환한다
+router.post('/image', (req, res, next) => {
+	try {
+		// 요청객체 유효성 체크
+		if (!req || !res || !req.body) {
+			next(createError(405, strings.err_wrong_params));
+			return;
+		}
+
+		// 2. 스코어 높은 답변 이미지를 반환한다
+		const chat = new ChatHandler(
+			async (request, topanswer, contexts, answers) => {
+			// async (request, answer, context) => {
+				console.log(Object.keys(contexts))
+				let answer_st = contexts['context'].indexOf(topanswer['answer'])
+				if(answer_st < 0) answer_st = 0
+				let answer_end = answer_st+topanswer['answer'].length
+				let contentHtml = `${card_html}				
+					<h4 class="card-title">${contexts['title']}</h4></div>
+					<div class="card-body"><p>${contexts['context'].substr(answer_st-100, 100)}<mark>${topanswer['answer']}</mark>${contexts['context'].substr(answer_end, 200)}</p></div></div></body></html>`
+				const browser = await puppeteer.launch({args: ['--start-fullscreen', '--no-sandbox', '--disable-setuid-sandbox']}); // --start-fullscreen 옵션 추가
+				const page = await browser.newPage();
+				await page.setViewport({width: 340, height: 380}); // 변경
+				await page.setContent(contentHtml);
+				await page.screenshot({path: 'img.png', omitBackground: true});
+				await browser.close();
+
+				const resBody = {
+					version: '2.0',
+					template: {
+						outputs: [
+							{
+								"simpleImage": {
+									"imageUrl": "http://34.217.138.255:8080/chat/imagedown",
+									"altText": "보물상자입니다"
+								}
+							},
+						],
+					},
+				};
+
+				res.status(200).json(resBody);
+				logger.debug('RESPONSE', resBody, req.originalUrl);
+			},
+			(error) => {
+				next(createError(520, strings.err_chat_fail));
+			}
+		);
+	} catch (e) {
+		next(e);
+	}
+
+});
+
+/** 이미지 요청 */
+router.get('/imagedown', (req, res, next) => {
 	try {
 		// res.send(`${card_html}
 		// <div class="card"><div class="card-header">
@@ -407,4 +471,67 @@ router.get('/image', (req, res, next) => {
 		next(e);
 	}
 });
+
+/** 응답 결과 점수 */
+router.post('/score', (req, res, next) => {
+	try {
+		logger.debug('REQUEST', req.body, req.originalUrl);
+
+		const resBody = {
+			version: '2.0',
+			template: {
+				outputs: [
+					{
+						"simpleText": {
+							"text": "보내주신 응답은 서비스를 향상시키는데에 사용됩니다, 감사합니다",
+						}
+					},
+				],
+			},
+		};
+
+		res.status(200).json(resBody);
+		logger.debug('RESPONSE', resBody, req.originalUrl);
+		
+	} catch (e) {
+		console.log(e)
+		next(e);
+	}
+});
+
+/** 질의 토큰화 결과 요청 */
+// router.post('/casualtalk', (req, res, next) => {
+// 	console.log('in casual')
+// 	try {
+// 		logger.debug('REQUEST', req.body, req.originalUrl);
+
+// 		// Casual Talk
+// 		const chat = new ChatHandler(
+// 			(answer) => {
+// 				console.log('get talk res')
+// 				const resBody = {
+// 					"version": "2.0",
+// 					"template": {
+// 						"outputs": [
+// 						{
+// 							simpleText: {
+// 								"text": answer
+// 							}
+// 						}]
+// 					}
+// 				}
+// 				res.status(200).json(resBody);
+// 				logger.debug('RESPONSE', resBody, req.originalUrl);
+// 			},
+// 			(error) => {
+// 				next(createError(520, strings.err_chat_fail));
+// 			}
+// 		);
+// 		chat.getCasualTalkResponse(req.body);
+		
+// 	} catch (e) {
+// 		console.log(e)
+// 		next(e);
+// 	}
+// });
 module.exports = router;
