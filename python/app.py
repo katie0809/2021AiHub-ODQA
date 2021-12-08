@@ -9,7 +9,7 @@ from predictor import QAPrediction
 app = Flask(__name__)
 
 pred_configs = {
-    'model_name_or_path': '/home/ubuntu/2021AiHub-ODQA/models/korquad_2/0-0-ckpt',
+    'model_name_or_path': '/home/ubuntu/2021AiHub-ODQA/models/kobigbird/0-2-ckpt',
     'max_seq_len': 4096,
     'doc_stride': 512
 }
