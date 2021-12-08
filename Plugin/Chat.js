@@ -22,10 +22,9 @@ class Chat {
 		}
 	}
 
-	async getCasualTalkResponse(context) {
-
+	async getCasualTalkResponse(param) {
 		try {
-			this.answer = await pytensor.casualtalk(this.questions)
+			this.answer = await pytensor.casualtalk(param['userRequest'].utterance)
 			this.successCallback(this.answer);
 		}
 		catch(e) {

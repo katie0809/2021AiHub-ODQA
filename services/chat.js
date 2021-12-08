@@ -608,38 +608,36 @@ router.post('/score', (req, res, next) => {
 });
 
 /** 질의 토큰화 결과 요청 */
-// router.post('/casualtalk', (req, res, next) => {
-// 	console.log('in casual')
-// 	try {
-// 		logger.debug('REQUEST', req.body, req.originalUrl);
+router.post('/casualtalk', (req, res, next) => {
+	try {
+		logger.debug('REQUEST', req.body, req.originalUrl);
 
-// 		// Casual Talk
-// 		const chat = new ChatHandler(
-// 			(answer) => {
-// 				console.log('get talk res')
-// 				const resBody = {
-// 					"version": "2.0",
-// 					"template": {
-// 						"outputs": [
-// 						{
-// 							simpleText: {
-// 								"text": answer
-// 							}
-// 						}]
-// 					}
-// 				}
-// 				res.status(200).json(resBody);
-// 				logger.debug('RESPONSE', resBody, req.originalUrl);
-// 			},
-// 			(error) => {
-// 				next(createError(520, strings.err_chat_fail));
-// 			}
-// 		);
-// 		chat.getCasualTalkResponse(req.body);
+		// Casual Talk
+		const chat = new ChatHandler(
+			(answer) => {
+				const resBody = {
+					"version": "2.0",
+					"template": {
+						"outputs": [
+						{
+							simpleText: {
+								"text": answer.answer
+							}
+						}]
+					}
+				}
+				res.status(200).json(resBody);
+				logger.debug('RESPONSE', resBody, req.originalUrl);
+			},
+			(error) => {
+				next(createError(520, strings.err_chat_fail));
+			}
+		);
+		chat.getCasualTalkResponse(req.body);
 		
-// 	} catch (e) {
-// 		console.log(e)
-// 		next(e);
-// 	}
-// });
+	} catch (e) {
+		console.log(e)
+		next(e);
+	}
+});
 module.exports = router;

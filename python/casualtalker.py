@@ -9,7 +9,7 @@ import pandas as pd
 class CasualTalker():
     def __init__(self):
         self.model = SentenceTransformer('sentence-transformers/xlm-r-100langs-bert-base-nli-stsb-mean-tokens')
-        self.answers = pd.read_csv('chatData.csv',engine='python', encoding='utf-8' ,error_bad_lines=False)
+        self.answers = pd.read_csv('/home/ubuntu/2021AiHub-ODQA/python/chatData.csv',engine='python', encoding='utf-8' ,error_bad_lines=False)
 
     def return_similar_answer(self, input):
         print(input)
