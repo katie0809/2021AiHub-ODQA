@@ -113,7 +113,7 @@ class Chat {
 
 				// 3.스코어가 가장 높은 정답블록과 전체 문서블록 반환한다.
 				let [topanswer, i, j] = this.getTopAnswer(this.answer);
-				this.successCallback(this.originalmsg, topanswer, this.context_list, this.answer);
+				this.successCallback(i, topanswer, this.context_list, this.answer);
 
 			}
 		}

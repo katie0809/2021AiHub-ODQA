@@ -8,7 +8,7 @@ const ChatHandler = require('../Plugin/Chat');
 
 const router = express.Router();
 const puppeteer = require('puppeteer');
-
+const { unlinkSync } = require('fs');
 /** 카드 html */
 const card_html=`
 <html>
@@ -279,10 +279,115 @@ router.post('/', (req, res, next) => {
 			next(createError(405, strings.err_wrong_params));
 			return;
 		}
+		let return_type = req.body['contexts'][0]['params']['type_name']['value'];
+		let successCallback;
+		if(return_type == '논문정보형') {
+			successCallback = (request, topanswer, contexts, answers) => {
+				const url = 'https://scienceon.kisti.re.kr/srch/selectPORSrchArticle.do?cn='
+				let carditems = []
+				contexts.forEach((context, i)=> {
+					curanswer = answers[i]['answer'][0]['answer']
+					if(curanswer.length > 0) {
+						cardinfo = {
+							"imageTitle": {
+								"title": curanswer
+							},
+							"itemList": [{
+								"title": "참고논문",
+								"description": `${context['title']}(${context['year']})`
+							},
+							{
+								"title": "저자",
+								"description": context['authors']
+							}],
+							"itemListAlignment": "left",
+							"buttons": [
+								{
+									"label": "논문보러가기",
+									"action": "webLink",
+									"webLinkUrl": `${url}${context['doc_id']}`
+								}
+							]
+						}
+						carditems.push(cardinfo)
+					}
+				});
+				const resBody = {
+					"version": "2.0",
+					"template": {
+					  "outputs": [
+						{
+							simpleText: {
+								"text": "제가 찾은 답변들이랍니다.."
+							},
+						},
+						{
+						  "carousel": {
+							"type": "itemCard",
+							"items": carditems,
+						  }
+						}],
+						"quickReplies": [
+							{
+								"messageText": "도움돼요",
+								"action": "message",
+								"label": "도움돼요"
+							},
+							{
+								"messageText": "별로에요",
+								"action": "message",
+								"label": "별로에요",
+								"data": {
+									"extra": {
+										"answer": topanswer['answer']
+									}
+								}
+							}
+						]
+					}
+				  }
+				res.status(200).json(resBody);
+				logger.debug('RESPONSE', resBody, req.originalUrl);
+			}
+		}
+		else if(return_type == '이미지형') {
+			successCallback = async (i, topanswer, contexts, answers) => {
+				let curctx = contexts[i];
+				let answer_st = curctx['context'].indexOf(topanswer['answer'])
+				console.log(answer_st)
+				if(answer_st < 0) answer_st = 0
+				let answer_end = answer_st+topanswer['answer'].length
+				let contentHtml = `${card_html}				
+					<h4 class="card-title">${curctx['title']}</h4></div>
+					<div class="card-body"><p>${curctx['context'].substr(answer_st-120, 120)}<mark>${topanswer['answer']}</mark>${curctx['context'].substr(answer_end, 200)}</p></div></div></body></html>`
+				const browser = await puppeteer.launch({args: ['--start-fullscreen', '--no-sandbox', '--disable-setuid-sandbox']}); // --start-fullscreen 옵션 추가
+				const page = await browser.newPage();
+				await page.setViewport({width: 340, height: 380}); // 변경
+				await page.setContent(contentHtml);
+				await page.screenshot({path: 'img.png', omitBackground: true});
+				await browser.close();
 
-		const chat = new ChatHandler(
-			(request, topanswer, contexts, answers) => {
-				console.log(contexts[0])
+				const resBody = {
+					version: '2.0',
+					template: {
+						outputs: [
+							{
+								"simpleImage": {
+									"imageUrl": "http://34.217.138.255:8080/chat/imagedown",
+									"altText": "보물상자입니다"
+								}
+							},
+						],
+					},
+				};
+
+				res.status(200).json(resBody);
+				logger.debug('RESPONSE', resBody, req.originalUrl);
+			}
+
+		}
+		else {
+			successCallback = (request, topanswer, contexts, answers) => {
 				const url = 'https://scienceon.kisti.re.kr/srch/selectPORSrchArticle.do?cn='
 				let carditems = []
 				contexts.forEach((context)=> {
@@ -332,11 +437,13 @@ router.post('/', (req, res, next) => {
 						]
 					}
 				  }
-
-
 				res.status(200).json(resBody);
 				logger.debug('RESPONSE', resBody, req.originalUrl);
-			},
+			}
+
+		}
+		const chat = new ChatHandler(
+			successCallback,
 			(error) => {
 				next(createError(520, strings.err_chat_fail));
 			}
@@ -460,12 +567,13 @@ router.post('/image', (req, res, next) => {
 /** 이미지 요청 */
 router.get('/imagedown', (req, res, next) => {
 	try {
-		// res.send(`${card_html}
-		// <div class="card"><div class="card-header">
-		// 	<h4 class="card-title">성종</h4></div>
-		// 	<div class="card-body"><p>${predicted}</p></div></div></body></html>`
-		// );
-		res.download('img.png')
+		res.download('img.png', 'img.png', (err) => {
+			// 전송후 이미지 삭제
+			if (!err) {
+				unlinkSync('img.png');
+				res.end();
+			}
+		})
 	} catch (e) {
 		console.log(e)
 		next(e);
