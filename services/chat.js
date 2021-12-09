@@ -373,7 +373,7 @@ router.post('/', (req, res, next) => {
 						outputs: [
 							{
 								"simpleImage": {
-									"imageUrl": "http://34.217.138.255:8080/chat/imagedown",
+									"imageUrl": "http://34.209.185.229:8080/chat/imagedown",
 									"altText": "보물상자입니다"
 								}
 							},
